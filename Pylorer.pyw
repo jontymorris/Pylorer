@@ -11,6 +11,49 @@ def center_window(window, width: str, height: str):
     window.geometry("{}x{}+{}+{}".format(width, height, x, y))
 
 
+class Explorer:
+
+    def __init__(self):
+        self.current_dir = os.path.abspath("/")
+    
+    # Returns the contents of the current directory
+    def get_files(self):
+        try:
+            return os.listdir(self.current_dir)
+        except PermissionError:
+            DialogueWindow("Permission Error", "You do not have permission to view that folder.")
+    
+    # Returns whether an item in the current directory is a file
+    def is_file(self, name: str):
+        return os.path.isfile(os.path.join(self.current_dir, name))
+    
+    # Changes the directory completely
+    def set_dir(self, path: str):
+        abs_path = os.path.abspath(path)
+
+        if os.path.isdir(abs_path):
+            self.current_dir = abs_path
+
+        else:
+            os.startfile(path)
+    
+    # Opens a file or folder in the current directory.
+    def open_file(self, name: str):
+        path = os.path.join(self.current_dir, name)
+        if self.is_file(name):
+            os.startfile(path)
+        else:
+            self.current_dir = path
+    
+    # Returns the parent dir of the current dir
+    def get_parent_dir(self):
+        return os.path.dirname(self.current_dir)
+    
+    # Checks if a file is a zip
+    def is_zip(self, name: str):
+        return name.endswith(".zip")
+
+
 class DialogueWindow:
 
     def __init__(self, title: str, message: str):
@@ -42,11 +85,13 @@ class OptionsPanel:
 
         # Create all of the buttons
         self.move_button = Button(self.frame, text="Move", command=self.move_file)
+        self.copy_button = Button(self.frame, text="Copy", command=self.copy_file)
         self.delete_button = Button(self.frame, text="Delete", command=self.delete_file)
         self.extract_button = Button(self.frame, text="Extract", command=self.extract_file)
 
         self.buttons = [
             self.move_button,
+            self.copy_button,
             self.delete_button,
             self.extract_button
         ]
@@ -109,49 +154,22 @@ class OptionsPanel:
                 self.window.update_files_list()
         except:
             DialogueWindow("Error", "Something went wrong.")
-
-
-class Explorer:
-
-    def __init__(self):
-        self.current_dir = os.path.abspath("/")
     
-    # Returns the contents of the current directory
-    def get_files(self):
+    # Copies the currently selected file
+    def copy_file(self):
         try:
-            return os.listdir(self.current_dir)
-        except PermissionError:
-            DialogueWindow("Permission Error", "You do not have permission to view that folder.")
-    
-    # Returns whether an item in the current directory is a file
-    def is_file(self, name: str):
-        return os.path.isfile(os.path.join(self.current_dir, name))
-    
-    # Changes the directory completely
-    def set_dir(self, path: str):
-        abs_path = os.path.abspath(path)
+            selected_file = self.window.get_selected_file()
+            destination = filedialog.askdirectory()
 
-        if os.path.isdir(abs_path):
-            self.current_dir = abs_path
+            if destination:
+                if os.path.isfile(selected_file):
+                    shutil.copy(selected_file, destination)
+                else:
+                    shutil.copytree(selected_file, destination)
+        except Exception as error:
+            print(error)
+            DialogueWindow("Error", "Something went wrong.")
 
-        else:
-            os.startfile(path)
-    
-    # Opens a file or folder in the current directory.
-    def open_file(self, name: str):
-        path = os.path.join(self.current_dir, name)
-        if self.is_file(name):
-            os.startfile(path)
-        else:
-            self.current_dir = path
-    
-    # Returns the parent dir of the current dir
-    def get_parent_dir(self):
-        return os.path.dirname(self.current_dir)
-    
-    # Checks if a file is a zip
-    def is_zip(self, name: str):
-        return name.endswith(".zip")
 
 class Window:
 
@@ -215,7 +233,7 @@ class Window:
             self.explorer.set_dir(self.path_entry.get())
             self.update_files_list()
         except FileNotFoundError:
-            DialogueWindow("File Error", "The file wasn't found.")
+            DialogueWindow("Path error", "Nothing was found at that path.")
         except:
             DialogueWindow("Error", "Something went wrong.")
     
