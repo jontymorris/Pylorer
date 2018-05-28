@@ -62,15 +62,22 @@ class DialogueWindow:
         self.root.title(title)
         self.root.resizable(0, 0)
         self.root.tk.call("tk", "scaling", 2.0)
-        
-        center_window(self.root, 250, 100)
+        self.root.bind("<Escape>", self.escape_button)
+
+        center_window(self.root, 250, 150)
 
         # Create the message
-        self.message_label = Label(self.root, text=message, wraplength=200)
-        self.message_label.pack()
+        Label(self.root, text=message, wraplength=200).pack(pady=10)
+        Button(self.root, text="Ok", command=self.close_window).pack()
 
         self.root.focus_force()
         self.root.mainloop()
+    
+    def escape_button(self, event):
+        self.root.destroy()
+    
+    def close_window(self):
+        self.root.destroy()
 
 
 class OptionsPanel:
