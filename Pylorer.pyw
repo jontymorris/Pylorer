@@ -54,6 +54,50 @@ class Explorer:
         return name.endswith(".zip")
 
 
+class InputWindow:
+
+    def __init__(self, title: str, name: str, callback):
+        self.callback = callback
+
+        # Init the window
+        self.root = Tk()
+        self.root.title(title)
+        self.root.resizable(0, 0)
+        self.root.tk.call("tk", "scaling", 2.0)
+        self.root.bind("<Escape>", self.escape_button)
+
+        center_window(self.root, 250, 150)
+
+        self.text_entry = Entry(self.root)
+        self.text_entry.bind("<Return>", self.entry_return)
+
+        Label(self.root, text=name).pack(pady=(30, 0))
+        self.text_entry.pack()
+        Button(self.root, text="Enter", command=self.return_text).pack()
+
+        self.text_entry.focus_force()
+
+        self.root.mainloop()
+
+    # Returns the inputed text
+    def return_text(self):
+        value = self.text_entry.get()
+        self.close_window()
+        self.callback(value)
+
+    # Called when esecape is pressed
+    def escape_button(self, event):
+        self.close_window()
+    
+    # Called when return is pressed on the text entry
+    def entry_return(self, entry):
+        self.return_text()
+
+    # Closes the window
+    def close_window(self):
+        self.root.destroy()
+
+
 class DialogueWindow:
 
     def __init__(self, title: str, message: str):
@@ -73,9 +117,11 @@ class DialogueWindow:
         self.root.focus_force()
         self.root.mainloop()
     
+    # Called when escape is pressed
     def escape_button(self, event):
-        self.root.destroy()
+        self.close_window()
     
+    # Closes thw window
     def close_window(self):
         self.root.destroy()
 
@@ -88,17 +134,17 @@ class OptionsPanel:
         # Init the frame
         self.frame = Frame(window.root)
 
-        Label(self.frame, text="File Options\n").grid(row=0, column=0)
-
         # Create all of the buttons
         self.move_button = Button(self.frame, text="Move", command=self.move_file)
         self.copy_button = Button(self.frame, text="Copy", command=self.copy_file)
+        self.rename_button = Button(self.frame, text="Rename", command=self.rename_file)
         self.delete_button = Button(self.frame, text="Delete", command=self.delete_file)
         self.extract_button = Button(self.frame, text="Extract", command=self.extract_file)
 
         self.buttons = [
             self.move_button,
             self.copy_button,
+            self.rename_button,
             self.delete_button,
             self.extract_button
         ]
@@ -173,9 +219,28 @@ class OptionsPanel:
                     shutil.copy(selected_file, destination)
                 else:
                     shutil.copytree(selected_file, destination)
+            
+                self.window.update_files_list()
         except Exception as error:
             print(error)
             DialogueWindow("Error", "Something went wrong.")
+    
+    # Prompts the user to enter a new file name
+    def rename_file(self):
+        InputWindow("Rename file", "New file name", self.rename_callback)
+    
+    # Renames the selected file
+    def rename_callback(self, new_name):
+        try:
+            selected_file = self.window.get_selected_file()
+            destination = os.path.join(self.window.explorer.current_dir, new_name)
+
+            os.rename(selected_file, destination)
+            self.window.update_files_list()
+        except FileExistsError:
+            DialogueWindow("File error", "A file is already using the desired filename.")
+        except:
+            DialogueWindow("Error", "Somethng went wrong.")
 
 
 class Window:
@@ -187,7 +252,7 @@ class Window:
         self.root.resizable(0, 0)
         self.root.tk.call("tk", "scaling", 2)
 
-        center_window(self.root, 365, 350)
+        center_window(self.root, 343, 350)
         
         # Add the level button
         self.level_button = Button(self.root, text="Up one level", command=self.level_button_command)
@@ -195,7 +260,7 @@ class Window:
 
         # Add the path entry
         self.path_entry = Entry(self.root)
-        self.path_entry.grid(row=1, column=0, columnspan=2, sticky=EW)
+        self.path_entry.grid(row=1, column=0, columnspan=2, sticky=EW, pady=(0, 10), padx=5)
         self.path_entry.bind("<Return>", self.path_enter)
 
         # Init the explorer
