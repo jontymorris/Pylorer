@@ -18,14 +18,15 @@ class DialogueWindow:
         self.root = Tk()
         self.root.title(title)
         self.root.resizable(0, 0)
-        self.root.focus_force()
-    
+        self.root.tk.call("tk", "scaling", 2.0)
+        
         center_window(self.root, 250, 100)
 
         # Create the message
         self.message_label = Label(self.root, text=message, wraplength=200)
         self.message_label.pack()
 
+        self.root.focus_force()
         self.root.mainloop()
 
 
@@ -82,7 +83,7 @@ class OptionsPanel:
             
             self.window.update_files_list()
         except:
-            DialogueWindow("Error", "Something went wrong")
+            DialogueWindow("Error", "Something went wrong.")
     
     # Extracts the currently selected file to the current directory
     def extract_file(self):
@@ -95,18 +96,19 @@ class OptionsPanel:
 
             self.window.update_files_list()
         except:
-            DialogueWindow("Error", "Something went wrong")
+            DialogueWindow("Error", "Something went wrong.")
     
     # Moves the currently selected file
     def move_file(self):
         try:
             selected_file = self.window.get_selected_file()
             destination = filedialog.askdirectory()
-            shutil.move(selected_file, destination)
 
-            self.window.update_files_list()
+            if destination:
+                shutil.move(selected_file, destination)
+                self.window.update_files_list()
         except:
-            DialogueWindow("Error", "Something went wrong")
+            DialogueWindow("Error", "Something went wrong.")
 
 
 class Explorer:
@@ -119,7 +121,7 @@ class Explorer:
         try:
             return os.listdir(self.current_dir)
         except PermissionError:
-            DialogueWindow("Error", "You do not have permission to view that folder")
+            DialogueWindow("Permission Error", "You do not have permission to view that folder.")
     
     # Returns whether an item in the current directory is a file
     def is_file(self, name: str):
@@ -158,8 +160,9 @@ class Window:
         self.root = Tk()
         self.root.title("Pylorer")
         self.root.resizable(0, 0)
+        self.root.tk.call("tk", "scaling", 2)
 
-        center_window(self.root, 250, 210)
+        center_window(self.root, 365, 350)
         
         # Add the level button
         self.level_button = Button(self.root, text="Up one level", command=self.level_button_command)
@@ -204,15 +207,17 @@ class Window:
                 else:
                     self.files_list.itemconfig(i, {"bg": "#ffd3bc"})
         except FileNotFoundError:
-            DialogueWindow("Warning", "That path does not exist.")
+            DialogueWindow("Path Error", "That path does not exist.")
     
     # Updates the path
     def path_enter(self, event):
         try:
             self.explorer.set_dir(self.path_entry.get())
             self.update_files_list()
+        except FileNotFoundError:
+            DialogueWindow("File Error", "The file wasn't found.")
         except:
-            DialogueWindow("Error", "Something went wrong :(")
+            DialogueWindow("Error", "Something went wrong.")
     
     # Opens the selected item
     def files_double_click(self, event):
